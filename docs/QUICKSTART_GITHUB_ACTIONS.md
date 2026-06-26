@@ -30,7 +30,7 @@ The workflow file already exists at `.github/workflows/build-and-push.yml`. Push
 cd ~/Documents/self_directed/kubernetes_projects/my-kube
 
 git add .github/workflows/build-and-push.yml .github/workflows/.gitkeep 2>/dev/null || true
-git add GITHUB_ACTIONS_SETUP.md app-deployment-dockerhub.yaml
+git add GITHUB_ACTIONS_SETUP.md k8s-manifests/overlays/dockerhub/app-deployment-dockerhub.yaml
 git commit -m "Add GitHub Actions CI/CD workflow for Docker Hub"
 git push origin main
 ```
@@ -40,14 +40,14 @@ git push origin main
 1. Go to https://github.com/MichaelRandall/k8s-users/actions
 2. You'll see the workflow running
 3. Wait for it to complete (usually 2-5 minutes)
-4. Check Docker Hub: https://hub.docker.com/r/m_ran66
-5. You should see `k8s-backend` and `k8s-frontend` repositories with images
+4. Check Docker Hub: https://hub.docker.com/r/mran66
+5. You should see `k8s-back` and `k8s-front` repositories with images
 
 ### Step 5: Deploy to Kubernetes (1 min)
 
 ```bash
 # Use Docker Hub images instead of local builds
-kubectl apply -f app-deployment-dockerhub.yaml -f app-ingress.yaml
+kubectl apply -f k8s-manifests/overlays/dockerhub/app-deployment-dockerhub.yaml -f k8s-manifests/base/app-ingress.yaml
 
 # Watch it pull and start
 kubectl get pods -w
@@ -58,7 +58,7 @@ kubectl rollout status deployment/frontend-deployment
 
 # Access
 kubectl -n ingress-nginx port-forward service/ingress-nginx-controller 18080:80
-open http://localhost:18080/
+xdg-open http://localhost:18080/
 ```
 
 **Done!** You now have a production-like CI/CD pipeline.
@@ -79,7 +79,7 @@ git push origin main    ──────────→  GitHub Actions workfl
                                       └─ Workflow complete              │
                                                                         │
 kubectl apply -f      ─────────────────────────────────────────────────→ Pulls images
-app-deployment-dockerhub.yaml                                            from Docker Hub
+k8s-manifests/overlays/dockerhub/app-deployment-dockerhub.yaml                                            from Docker Hub
                                                                          │
                                                          Kubernetes runs ──┘
                                                          your app from
@@ -120,10 +120,10 @@ Instead of `latest`, use git commit SHAs for production:
 
 ```bash
 # The workflow also creates tags with commit SHA
-# Example: k8s-backend:main-abc123def456
+# Example: k8s-back:main-abc123def456
 
 # In production deployment YAML:
-image: m_ran66/k8s-backend:main-abc123def456
+image: mran66/k8s-back:main-abc123def456
 imagePullPolicy: IfNotPresent
 ```
 

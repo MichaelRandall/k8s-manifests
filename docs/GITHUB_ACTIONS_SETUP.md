@@ -61,13 +61,13 @@ git push origin main
 
 The workflow will:
 - Trigger on push to `main` branch
-- Build backend image: `m_ran66/k8s-backend:latest`
-- Build frontend image: `m_ran66/k8s-frontend:latest`
+- Build backend image: `mran66/k8s-test:backend-latest`
+- Build frontend image: `mran66/k8s-test:frontend-latest`
 - Push both to Docker Hub
-- Add git commit SHA as a tag (e.g., `m_ran66/k8s-backend:main-abc123def`)
+- Add git commit SHA as a tag (e.g., `mran66/k8s-back:main-abc123def`)
 
 Check Docker Hub after the workflow completes:
-https://hub.docker.com/r/m_ran66/k8s-backend
+https://hub.docker.com/r/mran66/k8s-back
 
 You should see your images listed there.
 
@@ -83,7 +83,7 @@ Now your Kubernetes cluster can pull images directly from Docker Hub instead of 
 cd /path/to/my-kube
 
 # Use the Docker Hub manifest instead of the local build one
-kubectl apply -f app-deployment-dockerhub.yaml -f app-ingress.yaml
+kubectl apply -f k8s-manifests/overlays/dockerhub/app-deployment-dockerhub.yaml -f k8s-manifests/base/app-ingress.yaml
 
 # Verify rollout
 kubectl rollout status deployment/backend-deployment
@@ -91,7 +91,7 @@ kubectl rollout status deployment/frontend-deployment
 
 # Access the app
 kubectl -n ingress-nginx port-forward service/ingress-nginx-controller 18080:80
-open http://localhost:18080/
+xdg-open http://localhost:18080/
 ```
 
 ### Option B: Update Your Current Manifest
@@ -101,7 +101,7 @@ If you prefer to keep using `app-deployment.yaml`, just change the image referen
 ```yaml
 # In app-deployment.yaml, replace:
 # FROM: image: practice-backend:v5, imagePullPolicy: Never
-# TO:   image: m_ran66/k8s-backend:latest, imagePullPolicy: IfNotPresent
+# TO:   image: mran66/k8s-test:backend-latest, imagePullPolicy: IfNotPresent
 ```
 
 ---
@@ -115,19 +115,19 @@ If you prefer to keep using `app-deployment.yaml`, just change the image referen
 2. GitHub Actions workflow triggered automatically
    ├─ Checks out code
    ├─ Logs in to Docker Hub with DOCKER_HUB_TOKEN secret
-   ├─ Builds backend image: m_ran66/k8s-backend:latest (and :main-abc123)
+   ├─ Builds backend image: mran66/k8s-test:backend-latest (and :main-abc123)
    ├─ Pushes to Docker Hub
-   ├─ Builds frontend image: m_ran66/k8s-frontend:latest (and :main-abc123)
+   ├─ Builds frontend image: mran66/k8s-test:frontend-latest (and :main-abc123)
    ├─ Pushes to Docker Hub
    └─ Workflow completes (visible in GitHub Actions tab)
 
 3. Operator deploys to Kubernetes
-   └─ kubectl apply -f app-deployment-dockerhub.yaml
+   └─ kubectl apply -f k8s-manifests/overlays/dockerhub/app-deployment-dockerhub.yaml
 
 4. Kubernetes pulls images from Docker Hub
-   ├─ kubelet sees: image: m_ran66/k8s-backend:latest
+   ├─ kubelet sees: image: mran66/k8s-test:backend-latest
    ├─ Checks imagePullPolicy: IfNotPresent
-   ├─ Pulls from docker.io/m_ran66/k8s-backend:latest
+   ├─ Pulls from docker.io/mran66/k8s-test:backend-latest
    ├─ Starts container
    └─ Pod becomes Ready
 
@@ -156,19 +156,19 @@ The GitHub Actions workflow generates multiple tags for each push:
 
 ```bash
 # For a push to main branch with git commit abc123:
-m_ran66/k8s-backend:main              # Branch tag
-m_ran66/k8s-backend:main-abc123       # Commit SHA tag (unique)
-m_ran66/k8s-backend:latest            # Latest on main
+mran66/k8s-back:main              # Branch tag
+mran66/k8s-back:main-abc123       # Commit SHA tag (unique)
+mran66/k8s-test:backend-latest            # Latest on main
 ```
 
 **Use in production:**
 
 ```yaml
 # Development: Always pull latest
-image: m_ran66/k8s-backend:latest
+image: mran66/k8s-test:backend-latest
 
 # Production: Pin to specific commit for reproducibility
-image: m_ran66/k8s-backend:main-abc123def456
+image: mran66/k8s-back:main-abc123def456
 ```
 
 ---
@@ -191,7 +191,7 @@ image: m_ran66/k8s-backend:main-abc123def456
 **Verify**:
 - You pushed to `main` branch (not a PR)
 - Workflow ran successfully (check Actions tab)
-- Check Docker Hub: https://hub.docker.com/r/m_ran66
+- Check Docker Hub: https://hub.docker.com/r/mran66
 
 ### Kubernetes can't pull image
 
@@ -201,7 +201,7 @@ image: m_ran66/k8s-backend:main-abc123def456
 
 ```bash
 # Check if image exists on Docker Hub
-curl -s https://registry.hub.docker.com/v2/m_ran66/k8s-backend/tags/list
+curl -s https://registry.hub.docker.com/v2/mran66/k8s-back/tags/list
 
 # Check pod events
 kubectl describe pod <pod-name>
@@ -221,7 +221,7 @@ kubectl logs <pod-name>
 ```bash
 kubectl create secret docker-registry dockerhub-secret \
   --docker-server=docker.io \
-  --docker-username=m_ran66 \
+  --docker-username=mran66 \
   --docker-password=<your-password-or-token> \
   --docker-email=your@email.com
 ```
@@ -234,7 +234,7 @@ spec:
   - name: dockerhub-secret
   containers:
   - name: backend
-    image: m_ran66/k8s-backend:latest
+    image: mran66/k8s-test:backend-latest
 ```
 
 ---
@@ -245,7 +245,7 @@ spec:
 2. ✅ Add `DOCKER_HUB_TOKEN` to GitHub secrets
 3. ✅ Push `.github/workflows/build-and-push.yml` to GitHub
 4. ✅ Watch workflow build your images
-5. ✅ Deploy using `app-deployment-dockerhub.yaml`
+5. ✅ Deploy using `k8s-manifests/overlays/dockerhub/app-deployment-dockerhub.yaml`
 6. Test: Update code, push, watch GitHub Actions build automatically
 7. Optional: Add image scanning (Snyk), tests, security checks to workflow
 

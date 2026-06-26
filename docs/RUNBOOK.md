@@ -43,7 +43,7 @@ minikube image build -t practice-backend:v5 ./backend
 minikube image build -t practice-frontend:v2 ./frontend
 
 # Deploy using local images
-kubectl apply -f app-deployment.yaml -f app-ingress.yaml
+kubectl apply -f k8s-manifests/overlays/local/app-deployment.yaml -f k8s-manifests/base/app-ingress.yaml
 ```
 
 **When to use:**
@@ -70,15 +70,41 @@ git commit -m "Update API endpoint"
 git push origin main
 
 # 3. GitHub Actions automatically:
-#    - Builds backend image: m_ran66/k8s-backend:latest
-#    - Builds frontend image: m_ran66/k8s-frontend:latest
+#    - Builds backend image: mran66/k8s-test:backend-latest
+#    - Builds frontend image: mran66/k8s-test:frontend-latest
 #    - Pushes to Docker Hub
 #    (Check: GitHub repo → Actions tab)
 
 # 4. Deploy from Docker Hub
-kubectl apply -f app-deployment-dockerhub.yaml -f app-ingress.yaml
+kubectl apply -f k8s-manifests/overlays/dockerhub/app-deployment-dockerhub.yaml -f k8s-manifests/base/app-ingress.yaml
 
 # 5. Kubernetes automatically pulls from Docker Hub when rolling out
+```
+
+### Option B Rollout (Current Working Commands)
+
+Use this exact sequence after both GitHub Actions builds are green and tags exist in Docker Hub:
+
+```bash
+cd ~/Documents/self_directed/kubernetes_projects/my-kube
+
+# Apply manifests
+kubectl apply -f k8s-manifests/base/app-deployment-polyrepo.yaml -f k8s-manifests/base/app-ingress.yaml
+
+# Force pods to pull latest backend/frontend tags
+kubectl rollout restart deployment/backend-deployment
+kubectl rollout restart deployment/frontend-deployment
+
+# Wait until both are ready
+kubectl rollout status deployment/backend-deployment --timeout=180s
+kubectl rollout status deployment/frontend-deployment --timeout=180s
+
+# Verify running images
+kubectl get pods -o jsonpath='{.items[*].spec.containers[*].image}'
+# Expected: mran66/k8s-test:backend-latest mran66/k8s-test:frontend-latest
+
+# Expose ingress locally
+kubectl -n ingress-nginx port-forward service/ingress-nginx-controller 18080:80
 ```
 
 **When to use:**
@@ -109,7 +135,7 @@ kubectl get pods,svc,ingress
 
 **For Docker Hub deployments:**
 
-If using `app-deployment-dockerhub.yaml`, Kubernetes will pull images from Docker Hub. Watch the pod status:
+If using `k8s-manifests/overlays/dockerhub/app-deployment-dockerhub.yaml`, Kubernetes will pull images from Docker Hub. Watch the pod status:
 
 ```bash
 # Pod will transition: Pending → ContainerCreating → Running
@@ -121,7 +147,7 @@ kubectl logs <pod-name>
 
 # Verify image was pulled
 kubectl get pods -o jsonpath='{.items[*].spec.containers[*].image}'
-# Output: m_ran66/k8s-backend:latest m_ran66/k8s-frontend:latest
+# Output: mran66/k8s-test:backend-latest mran66/k8s-test:frontend-latest
 ```
 
 ### 4. Access Application
@@ -133,7 +159,7 @@ kubectl get pods -o jsonpath='{.items[*].spec.containers[*].image}'
 kubectl -n ingress-nginx port-forward service/ingress-nginx-controller 18080:80
 
 # In another terminal, open browser
-open http://localhost:18080/
+xdg-xdg-open http://localhost:18080/
 ```
 
 **Why port-forward?**
@@ -148,7 +174,7 @@ open http://localhost:18080/
 minikube tunnel
 
 # In another terminal
-open http://$(minikube ip)/
+xdg-xdg-open http://$(minikube ip)/
 ```
 
 **Note**: Requires sudo, may ask for your password periodically.
@@ -160,7 +186,7 @@ open http://$(minikube ip)/
 minikube ip  # E.g., 192.168.49.2
 
 # Access via explicit node port
-open http://192.168.49.2:30002/  # Frontend (if using NodePort service)
+xdg-open http://192.168.49.2:30002/  # Frontend (if using NodePort service)
 ```
 
 ---
@@ -331,11 +357,11 @@ kubectl get pods
 
 ```bash
 # Edit deployment YAML
-nano app-deployment.yaml
+nano k8s-manifests/overlays/local/app-deployment.yaml
 # Change: spec.replicas: 3
 
 # Apply
-kubectl apply -f app-deployment.yaml
+kubectl apply -f k8s-manifests/overlays/local/app-deployment.yaml
 ```
 
 ---
@@ -346,7 +372,7 @@ kubectl apply -f app-deployment.yaml
 
 ```bash
 # Delete all resources defined in manifests
-kubectl delete -f app-deployment.yaml -f app-ingress.yaml
+kubectl delete -f k8s-manifests/base/app-deployment-polyrepo.yaml -f k8s-manifests/base/app-ingress.yaml
 
 # Or specific resource
 kubectl delete deployment backend-deployment
@@ -373,7 +399,7 @@ minikube delete
 |---------|-------|
 | Workflow not triggered | Verify push to `main` branch (other branches don't trigger) |
 | Build failed | GitHub repo → Actions tab, click workflow → view logs |
-| Images not on Docker Hub | Visit https://hub.docker.com/r/m_ran66 and refresh |
+| Images not on Docker Hub | Visit https://hub.docker.com/r/mran66 and refresh |
 | DOCKER_HUB_TOKEN error | GitHub Settings → Secrets and variables → verify `DOCKER_HUB_TOKEN` exists |
 | ImagePullBackOff in K8s | Workflow may still building; wait 2-5 minutes, then pull latest |
 
@@ -460,12 +486,18 @@ containers:
 
 ```
 my-kube/
-├── .github/
-│   └── workflows/
-│       └── build-and-push.yml      # GitHub Actions: auto-build & push to Docker Hub
-├── app-deployment.yaml              # Local Minikube deployments (imagePullPolicy: Never)
-├── app-deployment-dockerhub.yaml    # Docker Hub deployments (imagePullPolicy: IfNotPresent)
-├── app-ingress.yaml                 # Ingress routing rules (same for both)
+├── k8s-manifests/
+│   ├── base/
+│   │   ├── app-deployment-polyrepo.yaml
+│   │   └── app-ingress.yaml
+│   └── overlays/
+│       ├── local/app-deployment.yaml
+│       └── dockerhub/app-deployment-dockerhub.yaml
+├── docs/
+│   ├── RUNBOOK.md
+│   └── TRAINING_GUIDE.md
+├── templates/
+│   └── github-actions/
 ├── backend/
 │   ├── Dockerfile
 │   ├── package.json
@@ -473,9 +505,7 @@ my-kube/
 ├── frontend/
 │   ├── Dockerfile
 │   └── index.html
-├── TRAINING_GUIDE.md                # Full Docker/Kubernetes concepts
-├── RUNBOOK.md                       # This file: quick reference
-└── GITHUB_ACTIONS_SETUP.md          # GitHub Actions → Docker Hub setup guide
+└── README.md
 ```
 
 ---

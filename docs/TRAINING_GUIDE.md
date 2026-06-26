@@ -670,6 +670,32 @@ For your app to run in production:
 
 ## Part 8: Quick Reference
 
+### Current Polyrepo Rollout (Your Environment)
+
+Your live workflow uses:
+- Docker Hub image: `mran66/k8s-test`
+- Backend tag: `backend-latest`
+- Frontend tag: `frontend-latest`
+
+Apply and roll out in Minikube:
+
+```bash
+cd ~/Documents/self_directed/kubernetes_projects/my-kube
+
+kubectl apply -f k8s-manifests/base/app-deployment-polyrepo.yaml \
+  -f k8s-manifests/base/app-ingress.yaml
+
+kubectl rollout restart deployment/backend-deployment
+kubectl rollout restart deployment/frontend-deployment
+
+kubectl rollout status deployment/backend-deployment --timeout=180s
+kubectl rollout status deployment/frontend-deployment --timeout=180s
+
+kubectl -n ingress-nginx port-forward service/ingress-nginx-controller 18080:80
+```
+
+Then open `http://localhost:18080/` in your browser.
+
 ### kubectl Commands
 
 ```bash
