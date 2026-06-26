@@ -9,7 +9,7 @@ on:
       - main
 
 env:
-  DOCKER_HUB_USERNAME: m_ran66
+  DOCKER_HUB_USERNAME: mran66
   IMAGE_NAME: k8s-test
   TAG_PREFIX: backend
 

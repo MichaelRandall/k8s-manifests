@@ -10,7 +10,7 @@ on:
       - main
 
 env:
-  DOCKER_HUB_USERNAME: m_ran66
+  DOCKER_HUB_USERNAME: mran66
   BACKEND_IMAGE: m_ran66/k8s-backend
   FRONTEND_IMAGE: m_ran66/k8s-frontend
 

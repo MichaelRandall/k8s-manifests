@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: m_ran66/k8s-test:backend-latest
+        image: mran66/k8s-test:backend-latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
@@ -65,7 +65,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: m_ran66/k8s-test:frontend-latest
+        image: mran66/k8s-test:frontend-latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
