@@ -6,17 +6,17 @@ This guide converts your monorepo into a polyrepo structure where frontend and b
 
 ```
 Development Phase:
-├── Developer 1: Works on backend/ → Pushes to k8s-backend repo
-└── Developer 2: Works on frontend/ → Pushes to k8s-frontend repo
+├── Developer 1: Works on backend/ → Pushes to k8s-back repo
+└── Developer 2: Works on frontend/ → Pushes to k8s-front repo
 
 CI/CD Phase:
-├── k8s-backend repo → GitHub Actions → Docker Hub (m_ran66/k8s-backend:latest)
-└── k8s-frontend repo → GitHub Actions → Docker Hub (m_ran66/k8s-frontend:latest)
+├── k8s-back repo → GitHub Actions → Docker Hub (mran66/k8s-test:backend-latest)
+└── k8s-front repo → GitHub Actions → Docker Hub (mran66/k8s-test:frontend-latest)
 
 Deployment Phase:
 Kubernetes pulls both images independently:
-├── k8s-backend:v5 (latest from backend repo)
-└── k8s-frontend:v3 (latest from frontend repo)
+├── k8s-back:v5 (latest from backend repo)
+└── k8s-front:v3 (latest from frontend repo)
 ```
 
 ## Step 1: Create GitHub Repositories
@@ -24,22 +24,22 @@ Kubernetes pulls both images independently:
 ### Create Backend Repository
 
 1. Go to https://github.com/new
-2. Repository name: `k8s-backend`
+2. Repository name: `k8s-back`
 3. Description: "Kubernetes backend service (Node.js + Express)"
 4. Public or Private (your choice)
 5. Initialize with: README
 6. Click **"Create repository"**
-7. Copy the HTTPS URL: `https://github.com/MichaelRandall/k8s-backend`
+7. Copy the HTTPS URL: `https://github.com/MichaelRandall/k8s-back`
 
 ### Create Frontend Repository
 
 1. Go to https://github.com/new
-2. Repository name: `k8s-frontend`
+2. Repository name: `k8s-front`
 3. Description: "Kubernetes frontend service (Static HTML)"
 4. Public or Private (your choice)
 5. Initialize with: README
 6. Click **"Create repository"**
-7. Copy the HTTPS URL: `https://github.com/MichaelRandall/k8s-frontend`
+7. Copy the HTTPS URL: `https://github.com/MichaelRandall/k8s-front`
 
 ## Step 2: Populate Repositories (From Your Local Monorepo)
 
@@ -47,8 +47,8 @@ Kubernetes pulls both images independently:
 
 ```bash
 # Clone the new backend repo
-git clone https://github.com/MichaelRandall/k8s-backend.git
-cd k8s-backend
+git clone https://github.com/MichaelRandall/k8s-back.git
+cd k8s-back
 
 # Copy backend files from your monorepo
 cp -r ~/Documents/self_directed/kubernetes_projects/my-kube/backend/* .
@@ -73,8 +73,8 @@ git push origin main
 
 ```bash
 # Clone the new frontend repo
-git clone https://github.com/MichaelRandall/k8s-frontend.git
-cd k8s-frontend
+git clone https://github.com/MichaelRandall/k8s-front.git
+cd k8s-front
 
 # Copy frontend files from your monorepo
 cp -r ~/Documents/self_directed/kubernetes_projects/my-kube/frontend/* .
@@ -98,7 +98,7 @@ git push origin main
 
 ### Backend Repository Workflow
 
-Create `.github/workflows/build-and-push.yml` in k8s-backend repo:
+Create `.github/workflows/build-and-push.yml` in k8s-back repo:
 
 ```yaml
 name: Build & Push Backend Image
@@ -112,8 +112,8 @@ on:
       - main
 
 env:
-  DOCKER_HUB_USERNAME: m_ran66
-  IMAGE_NAME: k8s-backend
+  DOCKER_HUB_USERNAME: mran66
+  IMAGE_NAME: k8s-back
 
 jobs:
   build-and-push:
@@ -164,7 +164,7 @@ jobs:
 
 ### Frontend Repository Workflow
 
-Create `.github/workflows/build-and-push.yml` in k8s-frontend repo:
+Create `.github/workflows/build-and-push.yml` in k8s-front repo:
 
 ```yaml
 name: Build & Push Frontend Image
@@ -178,8 +178,8 @@ on:
       - main
 
 env:
-  DOCKER_HUB_USERNAME: m_ran66
-  IMAGE_NAME: k8s-frontend
+  DOCKER_HUB_USERNAME: mran66
+  IMAGE_NAME: k8s-front
 
 jobs:
   build-and-push:
@@ -230,15 +230,15 @@ jobs:
 
 ## Step 4: Add Secrets to Both Repos
 
-**For k8s-backend repo:**
-1. Go to https://github.com/MichaelRandall/k8s-backend/settings/secrets/actions
+**For k8s-back repo:**
+1. Go to https://github.com/MichaelRandall/k8s-back/settings/secrets/actions
 2. Click **"New repository secret"**
 3. Name: `DOCKER_HUB_TOKEN`
 4. Value: (same token as before)
 5. Click **"Add secret"**
 
-**For k8s-frontend repo:**
-1. Go to https://github.com/MichaelRandall/k8s-frontend/settings/secrets/actions
+**For k8s-front repo:**
+1. Go to https://github.com/MichaelRandall/k8s-front/settings/secrets/actions
 2. Click **"New repository secret"**
 3. Name: `DOCKER_HUB_TOKEN`
 4. Value: (same token as before)
@@ -250,18 +250,18 @@ Keep your local folder the same, but now it acts as a **workspace** for both rep
 
 ```bash
 ~/Documents/self_directed/kubernetes_projects/my-kube/
-├── backend/              # Linked to k8s-backend repo
+├── backend/              # Linked to k8s-back repo
 │   ├── .git
 │   ├── Dockerfile
 │   ├── server.js
 │   └── package.json
-├── frontend/             # Linked to k8s-frontend repo
+├── frontend/             # Linked to k8s-front repo
 │   ├── .git
 │   ├── Dockerfile
 │   └── index.html
 └── k8s-manifests/        # (NEW) Kubernetes deployments
-    ├── app-deployment-polyrepo.yaml
-    └── app-ingress.yaml
+    ├── k8s-manifests/base/app-deployment-polyrepo.yaml
+    └── k8s-manifests/base/app-ingress.yaml
 ```
 
 ### Set Up Git Submodules (Optional, Advanced)
@@ -275,8 +275,8 @@ cd ~/Documents/self_directed/kubernetes_projects/my-kube
 rm -rf backend frontend
 
 # Add them as git submodules
-git submodule add https://github.com/MichaelRandall/k8s-backend.git backend
-git submodule add https://github.com/MichaelRandall/k8s-frontend.git frontend
+git submodule add https://github.com/MichaelRandall/k8s-back.git backend
+git submodule add https://github.com/MichaelRandall/k8s-front.git frontend
 
 # Commit
 git add .gitmodules backend frontend
@@ -301,14 +301,14 @@ Simpler approach: just clone each repo separately in your workspace:
 cd ~/Documents/self_directed/kubernetes_projects/
 
 # Clone both repos
-git clone https://github.com/MichaelRandall/k8s-backend.git
-git clone https://github.com/MichaelRandall/k8s-frontend.git
+git clone https://github.com/MichaelRandall/k8s-back.git
+git clone https://github.com/MichaelRandall/k8s-front.git
 git clone https://github.com/MichaelRandall/k8s-users.git k8s-manifests  # For Kubernetes files
 ```
 
 ## Step 6: Create Polyrepo Kubernetes Manifest
 
-In your k8s-users repo (or k8s-manifests folder), create `app-deployment-polyrepo.yaml`:
+In your k8s-users repo (or k8s-manifests folder), create `k8s-manifests/base/app-deployment-polyrepo.yaml`:
 
 ```yaml
 apiVersion: apps/v1
@@ -327,7 +327,7 @@ spec:
     spec:
       containers:
       - name: backend
-        image: m_ran66/k8s-backend:latest
+        image: mran66/k8s-test:backend-latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000
@@ -378,7 +378,7 @@ spec:
     spec:
       containers:
       - name: frontend
-        image: m_ran66/k8s-frontend:latest
+        image: mran66/k8s-test:frontend-latest
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
@@ -424,8 +424,8 @@ spec:
 
 ```bash
 # Deploy from polyrepo manifest
-kubectl apply -f k8s-manifests/app-deployment-polyrepo.yaml \
-              -f k8s-manifests/app-ingress.yaml
+kubectl apply -f k8s-manifests/k8s-manifests/base/app-deployment-polyrepo.yaml \
+              -f k8s-manifests/k8s-manifests/base/app-ingress.yaml
 
 # Verify
 kubectl get pods
@@ -438,7 +438,7 @@ kubectl rollout status deployment/frontend-deployment
 ### Backend Developer
 
 ```bash
-cd ~/Documents/self_directed/kubernetes_projects/k8s-backend
+cd ~/Documents/self_directed/kubernetes_projects/k8s-back
 
 # Make changes
 nano server.js
@@ -449,14 +449,14 @@ git commit -m "Add new API endpoint"
 git push origin main
 
 # GitHub Actions automatically:
-# - Builds m_ran66/k8s-backend:latest
-# - Builds m_ran66/k8s-backend:main-abc123
+# - Builds mran66/k8s-test:backend-latest
+# - Builds mran66/k8s-back:main-abc123
 ```
 
 ### Frontend Developer (Simultaneously)
 
 ```bash
-cd ~/Documents/self_directed/kubernetes_projects/k8s-frontend
+cd ~/Documents/self_directed/kubernetes_projects/k8s-front
 
 # Make changes
 nano index.html
@@ -467,18 +467,18 @@ git commit -m "Update UI styling"
 git push origin main
 
 # GitHub Actions automatically:
-# - Builds m_ran66/k8s-frontend:latest
-# - Builds m_ran66/k8s-frontend:main-def456
+# - Builds mran66/k8s-test:frontend-latest
+# - Builds mran66/k8s-front:main-def456
 ```
 
 ### Both Can Release Independently
 
 ```bash
 # Backend releases v2.0.0
-cd k8s-backend
+cd k8s-back
 git tag v2.0.0
 git push origin v2.0.0
-# Workflow creates: m_ran66/k8s-backend:2.0.0
+# Workflow creates: mran66/k8s-back:2.0.0
 
 # Frontend still on v1.0.0 (no changes yet)
 # Production continues running:
@@ -511,8 +511,8 @@ If you find polyrepo getting complex:
 
 ## Validation Checklist
 
-- [ ] k8s-backend repo created with Dockerfile, server.js, package.json
-- [ ] k8s-frontend repo created with Dockerfile, index.html
+- [ ] k8s-back repo created with Dockerfile, server.js, package.json
+- [ ] k8s-front repo created with Dockerfile, index.html
 - [ ] GitHub Actions workflows added to both repos
 - [ ] `DOCKER_HUB_TOKEN` secret added to both repos
 - [ ] Repos pushed to main branch

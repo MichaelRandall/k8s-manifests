@@ -11,12 +11,12 @@ This workspace is organized for polyrepo-style development.
 ## Kubernetes Layout
 
 - `k8s-manifests/base/`
-  - `app-deployment-polyrepo.yaml`
-  - `app-ingress.yaml`
+  - `k8s-manifests/base/app-deployment-polyrepo.yaml`
+  - `k8s-manifests/base/app-ingress.yaml`
 - `k8s-manifests/overlays/local/`
   - `app-deployment.yaml` (local/minikube image workflow)
 - `k8s-manifests/overlays/dockerhub/`
-  - `app-deployment-dockerhub.yaml` (registry pull workflow)
+  - `k8s-manifests/overlays/dockerhub/app-deployment-dockerhub.yaml` (registry pull workflow)
 
 ## Supporting Material
 
