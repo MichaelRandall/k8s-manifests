@@ -10,7 +10,8 @@ on:
 
 env:
   DOCKER_HUB_USERNAME: m_ran66
-  IMAGE_NAME: k8s-frontend
+  IMAGE_NAME: k8s-test
+  TAG_PREFIX: frontend
 
 jobs:
   build-and-push:
